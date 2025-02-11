@@ -1,0 +1,78 @@
+library(pacman)
+p_load(ISLR)
+p_load(College)
+p_load(tidyverse)
+p_load(janitor)
+p_load(stats)
+p_load(caret)
+p_load(pROC)
+
+college = College |> clean_names()
+
+head(college)
+dim(college)
+str(college)
+
+summary(college$f_undergrad)
+summary(college$grad_rate)
+college[college$grad_rate == 118, ]
+
+counts <- college |> group_by(private) |> 
+  summarise(n = n())
+
+counts
+
+counts |> ggplot(mapping = aes(x = private, y = n)) +
+  geom_col() +
+  scale_y_continuous(breaks = seq(0, 600, by = 50)) +
+  labs(x = "Private", y = "Count", title = "Counts of Private vs. Public")
+
+hist(college$grad_rate, main = "Frequency of Graduation Rates", 
+     xlab = "Graduation Rates")
+
+hist(college$outstate, main = "Frequency of Out of State Tuition", 
+     xlab = "Tuition")
+
+college |> ggplot(mapping = aes(x = grad_rate, y = outstate, colour = private)) +
+  geom_point() +
+  labs(x = "Graduation Rate", y = "Out of State Tuition", title = "Graduation Rate vs. Tuition")
+
+college |> ggplot(mapping = aes(x = f_undergrad, y = p_undergrad, colour = private)) +
+  geom_point(size = 1) +
+  labs(x = "Full Time", y = "Part Time", title = "Full Time vs Part Time Enrollment")
+
+college |> select(apps, accept) |>  mutate(acc_rate = accept / apps) |> 
+  arrange(acc_rate) |> 
+  slice(1:10)
+
+set.seed(123)
+train_index <- createDataPartition(college$private, p = 0.7, list = FALSE)
+train <- college[train_index,]
+test <- college[-train_index,]
+
+model1 <- glm(private ~ outstate + top10perc, data = train, family = binomial)
+
+model2 <- glm(private ~ outstate + top10perc, data = test, family = binomial)
+
+summary(model1)
+summary(model2)
+
+prob_pred_train <- predict(model1, newdata = train, type = "response")
+
+class_pred_train <- ifelse(prob_pred_train > 0.5, "Yes", "No")
+class_pred_train <- factor(class_pred_train, levels = levels(train$private))
+
+confusionMatrix(class_pred_train, train$private)
+
+prob_pred_test <- predict(model2, newdata = test, type = "response")
+
+class_pred_test <- ifelse(prob_pred_test > 0.5, "Yes", "No")
+class_pred_test <- factor(class_pred_test, levels = levels(test$private))
+
+confusionMatrix(class_pred_test, test$private)
+
+roc_curve <- roc(test$private, prob_pred_test)
+
+plot(roc_curve, main = "ROC Curve", col = "black")
+
+auc(roc_curve)
