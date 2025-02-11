@@ -1,0 +1,79 @@
+library(pacman)
+p_load(ISLR)
+p_load(tidyverse)
+p_load(caret)
+p_load(janitor)
+p_load(glmnet)
+
+
+college <- College |> clean_names()
+
+college$private <- as.numeric(college$private) - 1  
+
+x <- as.matrix(college[, !names(college) %in% "grad_rate"]) 
+y <- college$grad_rate  
+
+set.seed(123) 
+
+college_index <- createDataPartition(y, p = 0.7, list = FALSE)
+
+train_x <- x[college_index, ]
+train_y <- y[college_index]
+test_x <- x[-college_index, ]
+test_y <- y[-college_index]
+
+# Ridge
+
+ridge_reg <- cv.glmnet(train_x, train_y, alpha = 0)
+ridge_reg
+
+ridge_min <- ridge_reg$lambda.min  
+ridge_1se <- ridge_reg$lambda.1se 
+
+ridge_min
+ridge_1se
+
+plot(ridge_reg)
+
+ridge_model <- glmnet(train_x, train_y, alpha = 0, lambda = ridge_min)
+ridge_model
+
+ridge_coef <- coef(ridge_model)
+ridge_coef
+
+ridge_pred_train <- predict(ridge_model, newx = train_x)
+
+ridge_train_rmse <- sqrt(mean((train_y - ridge_pred_train)^2))
+ridge_train_rmse
+
+ridge_pred_test <- predict(ridge_model, newx = test_x)
+
+ridge_test_rmse <- sqrt(mean((test_y - ridge_pred_test)^2))
+ridge_test_rmse
+
+# Lasso
+
+lasso_reg <- cv.glmnet(train_x, train_y, alpha = 1)
+
+lasso_min <- lasso_reg$lambda.min
+lasso_1se <- lasso_reg$lambda.1se
+
+lasso_min
+lasso_1se
+
+plot(lasso_reg)
+
+lasso_model <- glmnet(train_x, train_y, lambda = lasso_min)
+
+lasso_coef <- coef(lasso_model)
+lasso_coef
+
+lasso_pred_train <- predict(lasso_model, newx = train_x)
+
+lasso_train_rmse <- sqrt(mean((train_y - lasso_pred_train)^2))
+lasso_train_rmse
+
+lasso_pred_test <- predict(lasso_model, newx = test_x)
+
+lasso_test_rmse <- sqrt(mean((test_y - lasso_pred_test)^2))
+lasso_test_rmse
