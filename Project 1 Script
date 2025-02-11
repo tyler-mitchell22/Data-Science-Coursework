@@ -1,0 +1,142 @@
+library(pacman)
+p_load(tidyverse)
+p_load(janitor)
+p_load(car)
+p_load(gvlma)
+p_load(leaps)
+p_load(caret)
+p_load(ggcorrplot)
+p_load(skimr)
+p_load(knitr)
+options(scipen = 999)
+
+
+ames <- read_csv("AmesHousing.csv") |> clean_names()
+
+skim(ames)
+
+summary(ames)
+
+ames |> group_by(neighborhood) |> 
+  summarise(n = n()) |> 
+  arrange(desc(n))
+
+price_data <- ames |> select(neighborhood, sale_price) |> 
+  group_by(neighborhood) |> 
+  summarise(median_price = median(sale_price)) |> 
+  arrange(desc(median_price)) |> 
+  slice(1:18) |> 
+  ungroup() 
+  
+price_data |> kable(caption = "Median Home Prices") 
+
+listing_data <- ames |> select(neighborhood) |> 
+  group_by(neighborhood) |> 
+  summarise(n = n()) |> 
+  arrange(desc(n)) |> 
+  slice(1:18) |> 
+  ungroup() 
+
+listing_data |> kable(caption = "Listings per Neighborhood")
+
+size_data <- ames |> select(neighborhood, gr_liv_area) |> 
+  group_by(neighborhood) |> 
+  summarise(mean_sqft = mean(gr_liv_area)) |> 
+  arrange(desc(mean_sqft)) |> 
+  slice(1:18) |> 
+  ungroup() 
+
+price_size <- ames |> select(neighborhood, gr_liv_area, sale_price) |> 
+  group_by(neighborhood) |> 
+  summarise(median_price = median(sale_price), sqft = mean(gr_liv_area)) |> 
+  slice(1:18) |> 
+  arrange(desc(median_price)) |> 
+  ungroup()
+
+ggplot(price_size, aes(x = sqft, y = median_price, label = neighborhood)) +
+  geom_point(size = 4, color = "blue") +
+  geom_text(nudge_y = 10000, check_overlap = TRUE) +  # Add neighborhood labels
+  labs(title = "Median Price vs. Mean Sqft by Neighborhood",
+       x = "Mean Square Footage (Sqft)",
+       y = "Median Sale Price") +
+  theme_minimal()
+
+size_data |> kable(caption = "Average Sq. Ft per Neighborhood")
+
+ames |> ggplot(mapping = aes(x = sale_price, y = lot_area)) +
+  geom_point()
+
+mx1 <- ames |> select(sale_price, gr_liv_area, lot_area, year_built, x1st_flr_sf) |> cor()
+mx1
+
+mx2 <- outlier_data |> select(sale_price, gr_liv_area, lot_area, year_built, tot_rms_abv_grd) |> cor()
+mx2
+
+corrplot(mx1)
+corrplot(mx1, method = "number")
+ggcorrplot(mx1) +
+  labs(title = "Correlation Matrix")
+
+ames |> ggplot(mapping = aes(x = gr_liv_area, y = sale_price)) +
+  geom_point() +
+  labs(x = "Above Ground Living Area (Sq. Ft.)", y = "Sale Price", title = "Living Area vs. Sale Price")
+
+ames |> ggplot(mapping = aes(x = lot_area, y = sale_price)) +
+  geom_point() +
+  labs(x = "Lot Area (Sq. Ft.)", y = "Sale Price", title = "Lot Area vs. Sale Price")
+
+ames |> ggplot(mapping = aes(x = x1st_flr_sf, y = sale_price)) +
+  geom_point() +
+  labs(x = "Rooms Above Ground", y = "Sale Price", title = "1st Floor Sq. Ft vs. Sale Price")
+
+model1 <- lm(formula = sale_price ~ gr_liv_area + lot_area + lot_frontage, data = ames)
+
+plot(model1)
+
+vif(model1)
+
+summary(model1)
+
+ames$sale_price_log <- log(ames$sale_price)
+
+model2 <- lm(sale_price_log ~ gr_liv_area + lot_area + lot_frontage, data = ames)
+
+summary(model2)
+
+ames[c(2182, 2181, 1499), ]
+
+outlier_data <- ames[-c(2182, 2181, 1499), ]
+
+
+model3 <- lm(formula = sale_price ~ gr_liv_area + lot_area + lot_frontage, data = outlier_data)
+
+summary(model3)
+
+model4 <- lm(sale_price_log ~ gr_liv_area + lot_area + lot_frontage, data = outlier_data)
+
+summary(model1)
+summary(model2)
+summary(model3)
+summary(model4)
+
+outliers <- ames[c(2182, 2181, 1499), ]
+
+set.seed(123)
+
+
+ames$predicted_price <- predict(model1, newdata = ames)
+
+ames |> ggplot(mapping = aes(x = sale_price, y = predicted_price)) +
+  geom_point()
+
+outlier_data$predicted_price <- predict(model3, newdata = outlier_data)
+
+outlier_data |> ggplot(mapping = aes(x = sale_price, y = predicted_price)) +
+  geom_point() +
+  labs(x = "Actual Price", y = "Predicted Price", title = "Actual vs. Predicted Price")
+
+num_var <- ames |> select(where(is.numeric)) |> drop_na()
+
+cor(num_var)
+
+corrplot(num_var)                           
