@@ -1,0 +1,140 @@
+# H0: Median Attendance = 3000
+# H1: Median Attendance ≠ 3000
+q6 <- c(6210, 3150, 2700, 3012, 4875, 
+                3540, 6127, 2581, 2642, 2573, 
+                2792, 2800, 2500, 3700, 6030, 
+                5437, 2758, 3490, 2851, 2720)
+
+qsignrank(0.025, 20)
+
+wilcox.test(q6, mu = 300, alternative = "two.sided")
+
+boxplot(q6, main = "Attendance Distribution",
+        ylab = "Attendance", col = "lightblue", horizontal = TRUE)
+abline(v = 3000, col = "black", lwd = 2, lty = 2)
+
+# Reject null
+
+# H0: Median tickets sold = 200
+# H1: Median tickets sold < 200
+binom.test(15, 40, p = 0.5, alternative = "less")
+# Fail to reject
+
+# H0: Median M - Median F = 0
+# H1: Median M - Median F ≠ 0
+males <- c(8, 12, 6, 14, 22, 27, 32, 24, 26, 19, 15, 13)
+females <- c(7, 5, 2, 3, 21, 26, 30, 9, 4, 17, 23, 12, 11, 16)
+
+qwilcox(0.025, 12, 14)
+
+wilcox.test(males, females, alternative = "two.sided")
+
+boxplot(males, females, names = c("Males", "Females"),
+        main = "Sentence Lengths by Gender", col = c("lightblue", "pink"),
+        ylab = "Sentence Length (Months)")
+# Fail to reject
+
+# H0: Median AL - Median NL = 0
+# H1: Median AL - Median NL ≠ 0
+nl <- c(89, 96, 88, 101, 90, 91, 92, 96, 108, 100, 95)
+al <- c(108, 86, 91, 97, 100, 102, 95, 104, 95, 89, 88, 101)
+
+qwilcox(0.025, 11, 12)
+
+wilcox.test(nl, al, alternative = "two.sided")
+
+boxplot(nl, al, names = c("NL", "AL"),
+        main = "Wins by League", col = c("lightgreen", "lightblue"),
+        ylab = "Wins")
+
+# Fail to reject
+
+# K Table
+# H0 The median difference between paired samples = zero
+# H1: The median difference between paired samples ≠ zero
+k5 <- qsignrank(0.005, 15)
+k6 <- qsignrank(0.025, 28)
+k7 <- qsignrank(0.05, 20)
+k8 <- qsignrank(0.05, 14) 
+
+k5 # Reject H0 13 < 16
+k6 # Reject H0 32 < 117
+k7 # Fail to reject 65 > 61
+k8 # Reject H0 22 < 26
+
+# H0 There is no significant difference in median among the three regions
+# H1 There is a significant difference in median among the three regions
+wh <- c(527, 406, 474, 381, 411)
+eur <- c(520, 510, 513, 548, 496)
+e_asia <- c(523, 547, 547, 391, 549)
+
+kruskal.test(list(wh, eur, e_asia))
+
+boxplot(wh, eur, e_asia, names = c("Western H.", "Europe", "E. Asia"),
+        main = "Math Literacy Scores by Region", col = c("red", "blue", "green"),
+        ylab = "Scores")
+
+# Fail to reject
+
+# H1: There is no correlation between subway rail
+# H1: There is correlation subway and  rail
+subway <- c(845, 494, 425, 313, 108, 41)
+rail <- c(39, 291, 142, 103, 33, 38)
+
+cor.test(subway, rail, method = "spearman")
+
+# Scatter Plot of Subway vs Rail Passengers
+plot(subway, rail, main = "Subway vs. Rail Trips",
+     xlab = "Subway Trips (in thousands)", ylab = "Rail Trips (in thousands)",
+     col = "black", pch = 19)
+abline(lm(rail ~ subway), col = "red", lwd = 2)  # Add trend line
+
+# Q 16
+experiments <- 40
+prizes <- 4
+
+boxes_needed <- function() {
+  collected_prizes <- integer(0)
+  boxes_count <- 0
+  
+  while (length(unique(collected_prizes)) < prizes) {
+    collected_prizes <- c(collected_prizes, sample(1:prizes, 1))
+    boxes_count <- boxes_count + 1
+  }
+  
+  return(boxes_count)
+}
+
+set.seed(123)
+boxes_needed <- replicate(experiments, boxes_needed())
+
+mean(boxes_needed)
+
+hist(boxes_needed, main = "Distribution of Boxes Needed for all Prizes",
+     xlab = "Number of Boxes", col = "skyblue", border = "black", breaks = 10)
+
+
+# Q18
+exp <- 30 
+letters <- c("B", "I", "G")
+prob <- c(0.6, 0.3, 0.1)
+
+tickets_needed <- function() {
+  collected <- character(0)
+  tkt_cnt <- 0
+  
+  while (length(unique(collected)) < length(letters)) {
+    new_ltr <- sample(letters, 1, prob = prob, replace = TRUE)
+    collected <- c(collected, new_ltr)
+    tkt_cnt <- tkt_cnt + 1
+  }
+  
+  return(tkt_cnt)
+}
+
+set.seed(123)
+tkt <- replicate(exp, tickets_needed())
+mean(tkt)
+
+hist(tkt, main = "Distribution of Tickets Needed to Win Lottery",
+     xlab = "Number of Tickets", col = "lightblue", border = "black", breaks = 10)
