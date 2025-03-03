@@ -1,0 +1,132 @@
+library(pacman)
+p_load(tidyverse)
+p_load(janitor)
+p_load(rpart)
+p_load(rpart.plot)
+p_load(caret)
+p_load(rattle)
+
+mushrooms <- read_csv("mushrooms copy.csv") |> clean_names()
+
+# Data Preprocessing 
+str(mushrooms)
+# Number of rows with missing values, NAs, etc; 
+colSums(is.na(mushrooms))
+## Your code here
+unique(mushrooms$veil_type)
+mushrooms <- mushrooms|> select(-`veil_type`)
+
+# Explore data (EDA)
+mushrooms |> ggplot(mapping = aes(x = odor, fill = class)) +
+  geom_bar(position = "fill") +
+  labs(x = "Odor", y = "Proportion", title = "Edibility by Odor")
+
+mushrooms |> ggplot(mapping = aes(x = gill_size, fill = class)) +
+  geom_bar(position = "fill") +
+  labs(x = "Gill Size", y = "Proportion", title = "Edibility by Gill Size")
+
+mushrooms |> ggplot(mapping = aes(x = cap_shape, fill = class)) +
+  geom_bar(position = "fill") +
+  labs(x = "Cap Shape", y = "Proportion", title = "Edibility by Cap Shape")
+
+mushrooms |> ggplot(mapping = aes(x = habitat, fill = class)) +
+  geom_bar(position = "fill") +
+  labs(x = "Habitat", y = "Proportion", title = "Edibility by Habitat")
+
+# Rename columns for readability
+# clean_names function was used for this
+
+##write your code here
+
+#Split data 
+set.seed(12345)
+train <- sample(1:nrow(mushrooms),
+                size = ceiling(0.80*nrow(mushrooms)),
+                replace = FALSE)
+# test set
+mushrooms_test <- mushrooms[-train, ]
+# write your code here
+
+# training set
+mushrooms_train <- mushrooms[train,]
+
+
+# building the classification tree with rpart
+# MODEL 1
+tree <- rpart(formula = class ~ cap_shape + odor + cap_surface + cap_color + 
+                gill_attachment + gill_spacing + veil_color, 
+              data = mushrooms_train, method = "class")
+summary(tree)
+# Visualize the decision tree with rpart.plot
+rpart.plot(tree, nn=TRUE)
+
+#Testing the model
+pred <- predict(object=tree,mushrooms_test[-1],type="class")
+
+#Calculating accuracy
+t <- table(mushrooms_test$class,pred) 
+confusionMatrix(t)
+
+# Model 2: Generate second model with different test train data split
+index <- createDataPartition(y = mushrooms$class, p = 0.7, list = FALSE)
+
+train <- mushrooms[index, ]
+test <- mushrooms[-index, ]
+
+tree2 <- rpart(formula = class ~ bruises + gill_size + gill_color + 
+        stalk_shape + stalk_surface_above_ring + stalk_surface_below_ring + 
+        spore_print_color + habitat, data = train, method = "class")
+summary(tree2)
+
+rpart.plot(tree2, nn=TRUE)
+
+#Test Model 2 Performance
+pred2 <- predict(object = tree2, test[-1],type="class")
+
+t2 <- table(test$class,pred2) 
+confusionMatrix(t2)
+
+# MODEL 3: Generate Third model by pruning the tree 
+##(Optional) 
+index2 <- createDataPartition(y = mushrooms$class, p = 0.6, list = FALSE)
+train2 <- mushrooms[index2, ]
+test2 <- mushrooms[-index2, ]
+
+tree3 <- rpart(formula = class ~ cap_surface + cap_color + 
+                 bruises + gill_size + gill_color + 
+                 stalk_surface_above_ring + spore_print_color + habitat + 
+                 ring_type + odor, 
+               data = train2, method = "class")
+summary(tree3)
+
+rpart.plot(tree3, nn=TRUE)
+# Write your own code 
+
+##Below is a sample code for pruning tree using 
+# best complexity parameter
+# choosing the best complexity parameter "cp" to prune the tree
+## Explain this part of the code in your report 
+cp.optim <- tree3$cptable[which.min(tree3$cptable[,"xerror"]),"CP"]
+
+model3_tree <- prune(tree3, cp=cp.optim)
+
+# Test the model 3 performance
+pred3 <- predict(object = tree3, test2[-1],type="class")
+
+t3 <- table(test2$class,pred3) 
+confusionMatrix(t3)
+
+
+## Compare the three model results in your report using TABLE 
+accuracy1 <- sum(diag(t)) / sum(t)
+accuracy2 <- sum(diag(t2)) / sum(t2)
+accuracy3 <- sum(diag(t3)) / sum(t3)
+
+comparison <- data.frame(
+  Model = c("Tree 1", "Tree 2", "Tree 3"),
+  Accuracy = c(accuracy1, accuracy2, accuracy3))
+
+print(comparison)
+
+
+## Compare the three model results in your report using TABLE 
