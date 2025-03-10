@@ -1,0 +1,102 @@
+library(pacman)
+p_load(tidyverse)
+p_load(caret)
+p_load(e1071)
+
+heart_df <- read.csv("heart_tidy.csv", sep = ',', header = TRUE)
+dim(heart_df)
+str(heart_df)
+head(heart_df)
+
+#Pre-process data
+# Check data types, NAs, etc. 
+colSums(is.na(heart_df))
+glimpse(heart_df)
+
+hist(heart_df$Age)
+
+## split data into a train and test set
+index <- 1:nrow(heart_df)
+testindex <- sample(index, trunc(length(index)/3))
+testset <- heart_df[testindex,]
+trainset <- heart_df[-testindex,]
+
+dim(trainset)
+dim(testset)
+
+##Using "linear" kernel
+svm_classifier<-svm(formula = PredictDisease ~.,
+                    data = trainset,
+                    kernel = 'linear',
+                    type = 'C-classification')
+svm_classifier
+summary(svm_classifier)
+
+##Predicting TestData
+# Predicting the Test set results 
+y_pred = predict(svm_classifier, 
+                 newdata = testset[-14]) 
+y_pred
+
+##Accuracy
+#Students should complete this section
+testset$PredictDisease <- as.factor(testset$PredictDisease)
+y_pred <- factor(y_pred, levels = levels(testset$PredictDisease))
+
+matrix <- confusionMatrix(y_pred, testset$PredictDisease)
+print(matrix)
+
+##SVM Using "SIgmoid" kernel instead of "linear"
+
+svm_2 <- svm(formula = PredictDisease ~ .,
+             data = trainset,
+             kernel = 'sigmoid',
+             type = 'C-classification')
+
+print(svm_2)
+summary(svm_2)
+
+y_pred_2 = predict(svm_2, 
+                 newdata = testset[-14]) 
+
+testset$PredictDisease <- as.factor(testset$PredictDisease)
+y_pred_2 <- factor(y_pred_2, levels = levels(testset$PredictDisease))
+
+matrix_2 <- confusionMatrix(y_pred_2, testset$PredictDisease)
+print(matrix_2)
+#Create Logistic Regression Model 
+##model 3 
+log_reg <- glm(PredictDisease ~ ., 
+               data = trainset, 
+               family = binomial)
+
+print(log_reg)
+summary(log_reg)
+
+y_pred_3 <- predict(log_reg, newdata = testset, type = "response")
+y_pred_3 <- ifelse(y_pred_3 > 0.5, 1, 0)
+
+testset$PredictDisease <- as.factor(testset$PredictDisease)
+y_pred_3 <- factor(y_pred_3, levels = levels(testset$PredictDisease))
+
+matrix_3 <- confusionMatrix(y_pred_3, testset$PredictDisease)
+print(matrix_3)
+
+# Different model
+log_reg_2 <- glm(PredictDisease ~ V1 + V2 + V3 + V5 + V10 + V11 + V12, 
+               data = trainset, 
+               family = binomial)
+
+print(log_reg_2)
+summary(log_reg_2)
+
+y_pred_4 <- predict(log_reg_2, newdata = testset, type = "response")
+y_pred_4 <- ifelse(y_pred_4 > 0.5, 1, 0)
+
+testset$PredictDisease <- as.factor(testset$PredictDisease)
+y_pred_4 <- factor(y_pred_4, levels = levels(testset$PredictDisease))
+
+matrix_4 <- confusionMatrix(y_pred_4, testset$PredictDisease)
+print(matrix_4)
+
+
