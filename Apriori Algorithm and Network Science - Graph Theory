@@ -1,0 +1,66 @@
+library(pacman)
+p_load(arules)
+p_load(arulesViz)
+
+macys <- read.csv("shopping.csv") 
+View(macys)
+str(macys)
+colnames(macys)
+dim(macys)
+#####################
+## Data Pre-processing
+###
+colSums(is.na(macys))
+## Convert to logical values
+
+# Remove Transaction ID column
+macys <- macys[ , -1] 
+
+# Convert 1s and 0s to TRUE/FALSE
+macys <- macys == 1
+
+# Convert to transaction format
+macys_trans <- as(macys, "transactions")
+
+# Inspect the first few transactions
+inspect(head(macys_trans, 5))
+
+##Market Basket Analysis Uisng Association RUles
+
+rules<-apriori(macys,
+               parameter = list(minlen=2, support=0.5, conf=0.5))
+
+rules
+rules.sorted <- sort(rules, by="lift")
+#Inspect the top 10 rules
+inspect(head(rules.sorted, 10))
+
+##Visualize rules
+plot(rules.sorted, method="scatterplot", measure="support", shading="lift")
+## Network Analysis
+plot(rules.sorted, method="graph", control=list(type="items"))
+plot(rules.sorted, method="matrix", measure="lift")
+plot(rules.sorted, method="paracoord", control=list(reorder=TRUE))
+
+## Repeat for different support and confidence threholds given in your assignment
+rules2 <- apriori(macys,
+               parameter = list(minlen=2, support=0.5, conf=0.4))
+rules.sorted2 <- sort(rules2, by="lift")
+inspect(head(rules.sorted2, 10))
+
+plot(rules.sorted2, method="scatterplot", measure="support", shading="lift")
+## Network Analysis
+plot(rules.sorted2, method="graph", control=list(type="items"))
+plot(rules.sorted2, method="matrix", measure="lift")
+plot(rules.sorted2, method="paracoord", control=list(reorder=TRUE))
+
+rules3 <- apriori(macys,
+                  parameter = list(minlen=2, support=0.4, conf=0.4))
+rules.sorted3 <- sort(rules3, by="lift")
+inspect(head(rules.sorted3, 10))
+
+plot(rules.sorted3, method="scatterplot", measure="support", shading="lift")
+## Network Analysis
+plot(rules.sorted3, method="graph", control=list(type="items"))
+plot(rules.sorted3, method="matrix", measure="lift")
+plot(rules.sorted3, method="paracoord", control=list(reorder=TRUE))
